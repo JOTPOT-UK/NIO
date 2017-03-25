@@ -1,0 +1,14 @@
+let de = new nio.output(26,_=>{
+	
+	console.log("YAY") ;
+	let currentVal = 0 ;
+	let yay =_=>{
+		
+		currentVal = Math.abs(currentVal-1) ;
+		de.value = currentVal ;
+		setTimeout(yay,10000) ;
+		
+	} ;
+	yay() ;
+	
+}) ;

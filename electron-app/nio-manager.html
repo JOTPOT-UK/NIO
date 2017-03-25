@@ -1,0 +1,265 @@
+<html>
+	<head>
+		<title>
+			NIO Manager
+		</title>
+	</head>
+	<body>
+		<h1>NIO Manager (v3.1.0)</h1>
+		<div>
+			
+			<span style="font-size: 1.5em;">Mode:</span>
+			<br><input type="checkbox" ID="printlogs">Print logs to display
+			<br><input type="checkbox" ID="savelogsdev">Save logs to device
+			<br><input type="checkbox" ID="collectlogs">Collect logs from device
+			<br><input type="checkbox" ID="stop">Stop on USB remove
+			<br><input type="checkbox" ID="access">Boot to command line
+			<br><input type="checkbox" ID="bash">Run bash (not yet supported)
+			<br><input type="checkbox" ID="reboot">Reboot before run
+			<br><input type="checkbox" ID="save">Save to device storage
+			<br><input type="checkbox" ID="asap">Start ASAP (worse initial performance)
+			
+			<br><span ID="mode"></span>
+			
+			<br><br><span style="font-size: 1.5em;">Nio script file:</span> <span ID="scriptFile"></span> <button type="button" ID="open">Select</button>
+			
+			<br><br><span style="font-size: 1.5em;">Make via USB:</span>
+			<br><span ID="isDevConnected">Scanning connected devices...</span>
+			<br>Password: <input type="password" ID="passwdu">
+			<br><button type="button" ID="makeusb">Make</button><button type="button" ID="logsusb">View Logs</button><button type="button" ID="sshusb">Terminal</button>
+			
+			<br><br>or <span style="font-size: 1.5em;">Make to drive:</span>
+			<br>Drive letter: <select ID="driveletter"></select>
+			<br><button type="button" ID="maked">Make</button> Yeah, I am crap.
+			
+			<br><br>or <span style="font-size: 1.5em;">Make via network:</span>
+			<br>IP Address: <input type="text" ID="ip_addr">
+			<br>Password: <input type="password" ID="passwd">
+			<br><button type="button" ID="netmake">Make</button><button type="button" ID="logsnet">View Logs</button><button type="button" ID="sshnet">Terminal</button>
+			
+		</div>
+		
+		<script type="text/javascript">
+			
+			let letters = ("abcdefghijklmnopqrstuvwxyz").toUpperCase().split("") ;
+			for (let doing in letters) {
+				
+				let creating = document.createElement("option") ;
+				creating.value = letters[doing] ;
+				creating.innerHTML = letters[doing] ;
+				document.getElementById("driveletter").appendChild(creating) ;
+				
+			}
+			
+			function getMode() {
+				
+				let modes = new Array() ;
+				let mode = new String() ;
+				let settings = ["printlogs","savelogsdev","collectlogs","stop","access","bash","reboot","save","asap"] ;
+				
+				for (let doing in settings) {
+					
+					mode += document.getElementById(settings[doing]).checked?"1":"0" ;
+					if (mode.length >= 8) {
+						
+						modes.push(parseInt(mode,2)) ;
+						mode = new String() ;
+						
+					}
+					
+				}
+				
+				if (mode.length > 0) {
+					
+					while (mode.length < 8) {
+						
+						mode += "0" ;
+						
+					}
+					
+					modes.push(parseInt(mode,2)) ;
+					
+				}
+				
+				return modes ;
+				
+			}
+			
+			let currentFile = new String() ;
+			document.getElementById("open").addEventListener("click",_=>{
+				
+				require("electron").ipcRenderer.once("opened",(d,file)=>{
+					
+					currentFile = file[0] ;
+					document.getElementById("scriptFile").innerText = currentFile ;
+					
+				}) ;
+				require("electron").ipcRenderer.send("open",getMode()) ;
+				
+			}) ;
+			
+			document.getElementById("maked").addEventListener("click",_=>{
+				
+				document.getElementById("maked").innerText = "Making..." ;
+				require("electron").ipcRenderer.once("made",_=>document.getElementById("maked").innerText="Make") ;
+				require("electron").ipcRenderer.send("make",currentFile,document.getElementById("driveletter").value,getMode()) ;
+				
+			}) ;
+			
+			document.getElementById("netmake").addEventListener("click",_=>{
+				
+				document.getElementById("netmake").innerText = "Making..." ;
+				require("electron").ipcRenderer.once("made",_=>document.getElementById("netmake").innerText="Make") ;
+				require("electron").ipcRenderer.send("netmake",currentFile,document.getElementById("ip_addr").value,document.getElementById("passwd").value,getMode()) ;
+				
+			}) ;
+			
+			document.getElementById("makeusb").addEventListener("click",_=>{
+				
+				document.getElementById("makeusb").innerText = "Making..." ;
+				require("electron").ipcRenderer.once("made",_=>document.getElementById("makeusb").innerText="Make") ;
+				require("electron").ipcRenderer.send("netmake",currentFile,"169.254.69.69",document.getElementById("passwdu").value,getMode()) ;
+				
+			}) ;
+			
+			document.getElementById("logsusb").addEventListener("click",_=>{
+				
+				getLogs("169.254.69.69",document.getElementById("passwdu").value) ;
+				
+			}) ;
+			
+			document.getElementById("sshusb").addEventListener("click",_=>{
+				
+				require("child_process").execSync("putty nio@169.254.69.69") ;
+				
+			}) ;
+			
+			document.getElementById("logsnet").addEventListener("click",_=>{
+				
+				getLogs(document.getElementById("ip_addr").value,document.getElementById("passwd").value) ;
+				
+			}) ;
+			
+			document.getElementById("sshnet").addEventListener("click",_=>{
+				
+				require("child_process").execSync("putty nio@" + document.getElementById("ip_addr").value) ;
+				
+			}) ;
+			
+			function updateMode() {
+				
+				let mode = getMode() ;
+				for (let doing in mode) {
+					
+					mode[doing] = mode[doing].toString(16) ;
+					if (mode[doing].length < 2) {
+						
+						mode[doing] = "0" + mode[doing] ;
+						
+					}
+					
+				}
+				document.getElementById("mode").innerText = "Current mode:" + mode.join("") ;
+				requestAnimationFrame(updateMode) ;
+				
+			}
+			updateMode() ;
+			
+			let net = require("net") ;
+			let dfound = false ;
+			let ts = net.createConnection(3048,"169.254.69.69") ;
+				
+				ts.on("data",d=>{
+					
+					d = d.toString().toLowerCase() ;
+					console.log(d) ;
+					if (d.indexOf("hello") === 0) {
+						
+						document.getElementById("isDevConnected").innerText = "Device 'NIO 3 #000002' found." ;
+						dfound = true ;
+						ts.end() ;
+						
+					}
+					
+				}) ;
+				
+			//}) ;
+			
+			setTimeout(_=>{
+				
+				if (!dfound) {
+					
+					document.getElementById("isDevConnected").innerText = "NIO device not connected." ;
+					ts.end() ;
+					
+				}
+				
+			},15000) ;
+			
+			function getLogs(addrYAY,passwd) {
+				
+				return new Promise(resolve=>{
+					
+					let onLogsYet = false ;
+					let logs = new String() ;
+					let allDone = false ;
+					let s = require("net").createConnection(3048,addrYAY) ;
+					s.on("data",d=>{
+						
+						d = d.toString() ;
+						console.log(d) ;
+						if (onLogsYet) {
+							
+							logs += d ;
+							console.log(logs) ;
+							if (d.toLowerCase().indexOf("\r\n\r\nwhat else") !== -1) {
+								
+								allDone = true ;
+								s.end() ;
+								alert(logs) ;
+								
+							}
+							console.log(allDone) ;
+							return ;
+							
+						}
+						
+						d = d.toLowerCase() ;
+						if (d.indexOf("hello") === 0) {
+							
+							s.write("Hello, how spiffing it is to see you today!\r\n") ;
+							
+						}
+						
+						else if (d.indexOf("password") === 0) {
+							
+							s.write(`${passwd}\r\n`) ;
+							
+						}
+						
+						else if (d.indexOf("what") === 0) {
+							
+							s.write("view logs please...") ;
+							onLogsYet = true ;
+							
+						}
+						
+					}) ;
+					s.on("end",_=>{
+						
+						if (!allDone) {
+							
+							alert("Erm...") ;
+							
+						}
+						
+					}) ;
+					
+				}) ;
+				
+			}
+			
+		</script>
+		
+	</body>
+</html>

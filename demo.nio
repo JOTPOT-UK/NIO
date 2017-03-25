@@ -1,0 +1,67 @@
+let leds = [26,19,13,6,5] ;
+
+let setUps = 0 ;
+function setUp() {
+	
+	setUps++ ;
+	if (setUps === leds.length) {
+		
+		let on = led => {
+			
+			if (led === -1) {
+				
+				led = leds.length - 1 ;
+				
+			}
+			
+			else if (led >= leds.length) {
+				
+				leds = 0 ;
+				
+			}
+			
+			leds[led].value = 1 ;
+			
+		} ;
+		
+		let off = led => {
+			
+			if (led === -1) {
+				
+				led = leds.length - 1 ;
+				
+			}
+			
+			else if (led >= leds.length) {
+				
+				leds = 0 ;
+				
+			}
+			
+			leds[led].value = 0 ;
+			
+		} ;
+		
+		let doing = 0 ;
+		setInterval(_=>{
+			
+			off(doing) ;
+			doing++ ;
+			if (doing >= leds.length) {
+				
+				doing = 0 ;
+				
+			}
+			on(doing) ;
+			
+		},80) ;
+		
+		
+	}
+	
+}
+for (let doing in leds) {
+	
+	leds[doing] = new nio.output(leds[doing],setUp) ;
+	
+}

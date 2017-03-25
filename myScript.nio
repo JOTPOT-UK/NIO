@@ -1,0 +1,32 @@
+
+console.log("Lets go!!!") ;
+let myInput = new nio.input(20) ;
+console.log(1) ;
+let myOutput = new nio.output(21) ;
+console.log(2) ;
+setTimeout(_=>{
+	
+	console.log("i",myInput.value) ;
+	console.log("o",myInput.value) ;
+	myInput.events.on("high",_=>console.log("Coke")) ;
+	myInput.events.on("low",_=>console.log("Aww")) ;
+	let oVal = false ;
+	let itteration = 50 ;
+	setInterval(_=>{
+		
+		oVal = !oVal ;
+		myOutput.value = oVal ;
+		console.log("Input value",myInput.value) ;
+		
+		itteration-- ;
+		if (itteration === 0) {
+			
+			myInput.unexport().then(_=>myOutput.unexport()).then(_=>process.exit()) ;
+			
+		}
+		
+	},1500) ;
+	
+},1500) ;
+
+
